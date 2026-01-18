@@ -17,13 +17,13 @@ def _get_state_geometry(state: str) -> dict:
     boundaries = _load_state_boundaries()
     state_lower = state.lower()
 
-    for feature in boundaries["features"]:
-        name = feature["properties"]["name"]
+    for feature in boundaries['features']:
+        name = feature['properties']['NAME']
         if name.lower() == state_lower:
-            return feature["geometry"]
+            return feature['geometry']
 
-    available = sorted(f["properties"]["name"] for f in boundaries["features"])
-    raise ValueError(f"Unknown state: {state!r}. Available: {available}")
+    available = sorted(f['properties']['NAME'] for f in boundaries['features'])
+    raise ValueError(f'Unknown state: {state!r}. Available: {available}')
 
 
 def _geo_to_cells_safe(geometry: dict, resolution: int) -> set[str]:
