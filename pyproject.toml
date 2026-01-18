@@ -3,9 +3,18 @@ name = "h3coco"
 version = "0.1.0"
 requires-python = ">=3.10"
 dependencies = [
+	"h3",
+]
+
+[dependency-groups]
+dev = [
+	"pytest",
 	"numpy",
 	"pandas",
 	"matplotlib",
-	"h3",
 	"jupyterlab",
 ]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
