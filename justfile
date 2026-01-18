@@ -7,8 +7,9 @@ lab:
 install:
     uv sync
 
-test: purge
-    uv run pytest
+test:
+    uv cache clean h3coco
+    uv run --reinstall-package h3coco pytest
 
 purge:
     just _rm .venv
