@@ -4,6 +4,47 @@ import h3
 import matplotlib.pyplot as plt
 from matplotlib.collections import PolyCollection
 
+from h3coco.states import _get_state_geometry
+
+
+def plot_state(state, ax=None, **kwargs):
+    """Plot the raw boundary polygon for a US state.
+
+    Args:
+        state: US state name (e.g., 'California', 'Texas')
+        ax: Matplotlib axes to plot on. If None, uses current axes.
+        **kwargs: Passed to PolyCollection (e.g., facecolor, edgecolor, alpha).
+
+    Returns:
+        The PolyCollection added to the axes.
+    """
+    if ax is None:
+        ax = plt.gca()
+
+    kwargs.setdefault('facecolor', 'none')
+    kwargs.setdefault('edgecolor', 'black')
+    kwargs.setdefault('linewidth', 1)
+
+    geometry = _get_state_geometry(state)
+    polygons = []
+
+    if geometry['type'] == 'Polygon':
+        # coordinates is [exterior, hole1, hole2, ...]
+        # just plot exterior ring for simplicity
+        ring = geometry['coordinates'][0]
+        polygons.append(ring)  # already (lng, lat)
+    elif geometry['type'] == 'MultiPolygon':
+        for poly_coords in geometry['coordinates']:
+            ring = poly_coords[0]  # exterior ring
+            polygons.append(ring)
+
+    collection = PolyCollection(polygons, **kwargs)
+    ax.add_collection(collection)
+    ax.autoscale_view()
+    ax.set_aspect('equal')
+
+    return collection
+
 
 def plot_cells(cells, ax=None, **kwargs):
     """Plot a set of H3 cells.

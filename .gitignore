@@ -11,3 +11,4 @@ wheels/
 .ipynb_checkpoints
 .claude
 uv.lock
+.pytest_cache

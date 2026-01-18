@@ -7,7 +7,7 @@ lab:
 install:
     uv sync
 
-test:
+test: purge
     uv run pytest
 
 purge:
@@ -20,6 +20,7 @@ purge:
     just _rm '*.ipynb_checkpoints'
     just _rm __pycache__
     just _rm uv.lock
+    uv cache clean h3coco
 
 _rm pattern:
     -@find . -name "{{pattern}}" -prune -exec rm -rf {} +
