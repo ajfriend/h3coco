@@ -4,12 +4,12 @@ export UV_OFFLINE := "0"  # toggle on when offline to avoid failures
 lab:
     uv run jupyter lab
 
-install:
-    uv sync
-
-test:
+reinstall:
     uv cache clean h3coco
-    uv run --reinstall-package h3coco pytest
+    uv sync --reinstall-package h3coco
+
+test: reinstall
+    uv run pytest
 
 purge:
     just _rm .venv
