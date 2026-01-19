@@ -1,6 +1,6 @@
-from h3coco import cells_for_state
+import h3coco as coco
 
 
 def test_maryland():
-    cells = cells_for_state('Maryland', 5)
+    cells = coco.cells_for_state('Maryland', 5)
     assert len(cells) > 0

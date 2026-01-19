@@ -4,6 +4,7 @@
 
 - Use single quotes for strings, not double quotes.
 - But use triple double quotes for string blocks
+- Import h3coco as: `import h3coco as coco`, then use `coco.function_name()`
 
 ## Testing
 
