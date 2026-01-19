@@ -1,5 +1,6 @@
 """Compare h3.compact_cells vs coco.compact across US states."""
 
+import time
 import h3
 import pandas as pd
 from tabulate import tabulate
@@ -9,6 +10,7 @@ import h3coco as coco
 
 def compare_state(state: str, res: int) -> dict:
     """Compare compaction methods for a single state."""
+    start_time = time.time()
     print(f'Processing {state}...', flush=True)
     cells = set(coco.cells_for_state(state, res))
 
@@ -27,6 +29,7 @@ def compare_state(state: str, res: int) -> dict:
     coco_count = len(coco_compacted)
     reduction = (h3_count - coco_count) / h3_count * 100 if h3_count > 0 else 0
 
+    duration = time.time() - start_time
     return {
         'state': state,
         'resolution': res,
@@ -34,36 +37,50 @@ def compare_state(state: str, res: int) -> dict:
         'h3_compact': h3_count,
         'coco_compact': coco_count,
         'reduction': reduction,
+        'duration': duration,
     }
 
 
-def generate_markdown_table(df: pd.DataFrame) -> str:
+def generate_markdown_table(df: pd.DataFrame, include_time_column: bool = True) -> str:
     """Generate a markdown table from DataFrame."""
     df = df.copy()
     df['reduction'] = df['reduction'].apply(lambda x: f'-{x:.1f}%' if x > 0 else '0%')
+
+    columns = ['state', 'resolution', 'original', 'h3_compact', 'coco_compact', 'reduction']
+    headers = ['State', 'Res', '# Cells', 'h3.compact', 'coco.compact', 'Reduction']
+    colalign = ('left', 'right', 'right', 'right', 'right', 'right')
+
+    if include_time_column:
+        df['duration'] = df['duration'].apply(lambda x: f'{x:.2f}s')
+        columns.append('duration')
+        headers.append('Time')
+        colalign = colalign + ('right',)
+
     return tabulate(
-        df[['state', 'resolution', 'original', 'h3_compact', 'coco_compact', 'reduction']],
-        headers=['State', 'Res', '# Cells', 'h3.compact', 'coco.compact', 'Reduction'],
+        df[columns],
+        headers=headers,
         tablefmt='github',
         showindex=False,
         intfmt=',',
-        colalign=('left', 'right', 'right', 'right', 'right', 'right'),
+        colalign=colalign,
     )
 
 
-RES = 6
-SKIP = {
-    # 'Alaska',
+DEFAULT_RESOLUTION = 7
+EXCEPTIONS = {
+    'Alaska': 6,
+    'District of Columbia': 10,
+    'Rhode Island': 8,
+    'Delaware': 8,
 }
 
 results = [
-    compare_state(state, RES)
+    compare_state(state, EXCEPTIONS.get(state, DEFAULT_RESOLUTION))
     for state in coco.state_names()
-    if state not in SKIP
 ]
 
 df = pd.DataFrame(results)
 df = df.sort_values('reduction', ascending=False)
 
 print()
-print(generate_markdown_table(df))
+print(generate_markdown_table(df, include_time_column=False))
