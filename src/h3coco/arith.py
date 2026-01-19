@@ -126,78 +126,60 @@ class ArithDict:
 
 
 from collections import defaultdict
-from dataclasses import dataclass
 
 
-@dataclass
-class _Janus:
-    """Internal helper for cocompact algorithm."""
-    root: str
-    child_res: int
-    local_target_cells: set[str]
-    pos: ArithDict
-    neg: ArithDict
+class Janus:
+    """Tracks cells we want (pos) and don't want (neg) under a root cell."""
+
+    def __init__(self, root, pos, neg):
+        self.root = root
+        self.pos = pos
+        self.neg = neg
 
     @classmethod
-    def from_cell(cls, h: str):
-        return cls(
-            root=h,
-            child_res=h3.get_resolution(h),
-            local_target_cells={h},
-            pos=ArithDict({h: 1}),
-            neg=ArithDict(),
-        )
+    def included(cls, cell):
+        """A cell we want."""
+        return cls(cell, ArithDict([cell]), ArithDict())
+
+    @classmethod
+    def excluded(cls, cell):
+        """A cell we don't want."""
+        return cls(cell, ArithDict(), ArithDict([cell]))
+
+    @classmethod
+    def merge(cls, parent, children):
+        """Merge children under a common parent, choosing compact representation."""
+        pos = ArithDict.sum(j.pos for j in children)
+        neg = ArithDict.sum(j.neg for j in children)
+
+        # Choose whichever representation is more compact
+        if len(neg) + 1 < len(pos):
+            pos = ArithDict([parent]) - neg
+        else:
+            neg = ArithDict([parent]) - pos
+
+        return cls(parent, pos, neg)
 
 
-def _from_cells(cells):
-    return {c: _Janus.from_cell(c) for c in cells}
-
-
-def _process_children(parent: str, children: list[_Janus]) -> _Janus:
-    pos = ArithDict.sum(j.pos for j in children)
-    neg = ArithDict.sum(j.neg for j in children)
-    child_res = children[0].child_res
-    local_target = set.union(*[c.local_target_cells for c in children])
-
-    # Decide: direct representation vs complement
-    if len(neg) + 1 < len(pos):
-        pos = ArithDict([parent]) - neg
-    else:
-        neg = ArithDict([parent]) - pos
-
-    return _Janus(
-        root=parent,
-        child_res=child_res,
-        local_target_cells=local_target,
-        pos=pos,
-        neg=neg,
-    )
-
-
-def _bump(janni: dict[str, _Janus]) -> dict[str, _Janus]:
+def _bump(janni):
+    """Move all Janus objects up one resolution level."""
     groups = defaultdict(list)
-    for c, j in janni.items():
-        p = h3.cell_to_parent(c)
-        groups[p].append(j)
+    for j in janni.values():
+        groups[h3.cell_to_parent(j.root)].append(j)
 
-    # Fill in missing children with Janus objects that exclude the entire cell
+    result = {}
     for parent, children in groups.items():
-        child_res = children[0].child_res
+        # Fill in missing children as excluded
         covered = {j.root for j in children}
-        all_children = set(h3.cell_to_children(parent))
-        for missing in all_children - covered:
-            children.append(_Janus(
-                root=missing,
-                child_res=child_res,
-                local_target_cells=set(),
-                pos=ArithDict(),
-                neg=ArithDict({missing: 1}),
-            ))
+        for missing in set(h3.cell_to_children(parent)) - covered:
+            children.append(Janus.excluded(missing))
 
-    return {h: _process_children(h, children) for h, children in groups.items()}
+        result[parent] = Janus.merge(parent, children)
+
+    return result
 
 
-def cocompact(cells) -> dict[str, int]:
+def cocompact(cells):
     """Compact a set of H3 cells into a signed cell representation.
 
     Args:
@@ -209,16 +191,13 @@ def cocompact(cells) -> dict[str, int]:
     """
     cells = list(cells)
     res = h3.get_resolution(cells[0])
-    for c in cells:
-        assert h3.get_resolution(c) == res
 
-    janni = _from_cells(cells)
+    janni = {c: Janus.included(c) for c in cells}
     while res > 0:
         janni = _bump(janni)
         res -= 1
 
-    out = ArithDict.sum(j.pos for j in janni.values())
-    return dict(out)
+    return dict(ArithDict.sum(j.pos for j in janni.values()))
 
 
 def co_uncompact(cells: dict[str, int], res: int) -> set[str]:
