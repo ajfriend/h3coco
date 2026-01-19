@@ -181,7 +181,7 @@ def _bump(janni):
             for parent, children in groups.items()]
 
 
-def cocompact(cells):
+def compact(cells):
     """Compact a set of H3 cells into a signed cell representation.
 
     Args:
@@ -199,7 +199,7 @@ def cocompact(cells):
     return dict(ArithDict.sum(j.pos for j in janni))
 
 
-def co_uncompact(cells: dict[str, int], res: int) -> set[str]:
+def uncompact(cells, res):
     """Uncompact a signed cell representation to a set of cells at target resolution.
 
     Args:

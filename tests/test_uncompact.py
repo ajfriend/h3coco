@@ -1,13 +1,13 @@
 import h3coco as coco
 
 
-def test_co_uncompact():
+def test_uncompact():
     cells = {
         '8049fffffffffff': +1,
         '81483ffffffffff': -1,
         '824807fffffffff': +1,
     }
-    result = coco.co_uncompact(cells, 2)
+    result = coco.uncompact(cells, 2)
 
     expected = {
         '824807fffffffff',
