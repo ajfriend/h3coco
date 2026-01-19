@@ -125,6 +125,85 @@ class ArithDict:
         return self._d.values()
 
 
+from collections import defaultdict
+from dataclasses import dataclass
+
+
+@dataclass
+class _Janus:
+    """Internal helper for cocompact algorithm."""
+    root: str
+    child_res: int
+    local_target_cells: set[str]
+    pos: ArithDict
+    neg: ArithDict
+
+    @classmethod
+    def from_cell(cls, h: str):
+        return cls(
+            root=h,
+            child_res=h3.get_resolution(h),
+            local_target_cells={h},
+            pos=ArithDict({h: 1}),
+            neg=ArithDict(),
+        )
+
+
+def _from_cells(cells):
+    return {c: _Janus.from_cell(c) for c in cells}
+
+
+def _process_children(parent: str, children: list[_Janus]) -> _Janus:
+    pos = ArithDict.sum(j.pos for j in children)
+    neg = ArithDict.sum(j.neg for j in children)
+
+    if len(neg) + 1 < len(pos):
+        pos = ArithDict([parent]) - neg
+    else:
+        neg = ArithDict([parent]) - pos
+
+    return _Janus(
+        root=parent,
+        child_res=children[0].child_res,
+        local_target_cells=set.union(*[c.local_target_cells for c in children]),
+        pos=pos,
+        neg=neg,
+    )
+
+
+def _bump(janni: dict[str, _Janus]) -> dict[str, _Janus]:
+    groups = defaultdict(list)
+    for c, j in janni.items():
+        p = h3.cell_to_parent(c)
+        groups[p].append(j)
+
+    return {h: _process_children(h, children) for h, children in groups.items()}
+
+
+def cocompact(cells) -> dict[str, int]:
+    """Compact a set of H3 cells into a signed cell representation.
+
+    Args:
+        cells: Iterable of H3 cell indices (all at same resolution).
+
+    Returns:
+        Dict mapping H3 cell indices to signed integers (+1 or -1).
+        Use co_uncompact to expand back to the original cells.
+    """
+    cells = list(cells)
+    res = h3.get_resolution(cells[0])
+    for c in cells:
+        assert h3.get_resolution(c) == res
+
+    janni = _from_cells(cells)
+    while res > 0:
+        janni = _bump(janni)
+        res -= 1
+
+    out = ArithDict.sum(j.pos for j in janni.values())
+    return dict(out)
+
+
 def co_uncompact(cells: dict[str, int], res: int) -> set[str]:
     """Uncompact a signed cell representation to a set of cells at target resolution.
 
