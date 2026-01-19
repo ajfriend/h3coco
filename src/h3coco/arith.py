@@ -105,6 +105,11 @@ class ArithDict:
     __rmul__ = __mul__
 
     @classmethod
+    def one(cls, key):
+        """Create an ArithDict with a single key having value 1."""
+        return cls({key: 1})
+
+    @classmethod
     def sum(cls, iterable):
         """Sum an iterable of items, applying ArithDict constructor to each."""
         result = cls()
@@ -139,24 +144,29 @@ class Janus:
     @classmethod
     def included(cls, cell):
         """A cell we want."""
-        return cls(cell, ArithDict([cell]), ArithDict())
+        return cls(cell, ArithDict.one(cell), ArithDict())
 
     @classmethod
     def excluded(cls, cell):
         """A cell we don't want."""
-        return cls(cell, ArithDict(), ArithDict([cell]))
+        return cls(cell, ArithDict(), ArithDict.one(cell))
 
     @classmethod
     def merge(cls, parent, children):
         """Merge children under a common parent, choosing compact representation."""
+        # Fill in any missing children as excluded
+        covered = {j.root for j in children}
+        for missing in set(h3.cell_to_children(parent)) - covered:
+            children.append(cls.excluded(missing))
+
         pos = ArithDict.sum(j.pos for j in children)
         neg = ArithDict.sum(j.neg for j in children)
 
         # Choose whichever representation is more compact
         if len(neg) + 1 < len(pos):
-            pos = ArithDict([parent]) - neg
+            pos = ArithDict.one(parent) - neg
         else:
-            neg = ArithDict([parent]) - pos
+            neg = ArithDict.one(parent) - pos
 
         return cls(parent, pos, neg)
 
@@ -164,19 +174,11 @@ class Janus:
 def _bump(janni):
     """Move all Janus objects up one resolution level."""
     groups = defaultdict(list)
-    for j in janni.values():
+    for j in janni:
         groups[h3.cell_to_parent(j.root)].append(j)
 
-    result = {}
-    for parent, children in groups.items():
-        # Fill in missing children as excluded
-        covered = {j.root for j in children}
-        for missing in set(h3.cell_to_children(parent)) - covered:
-            children.append(Janus.excluded(missing))
-
-        result[parent] = Janus.merge(parent, children)
-
-    return result
+    return [Janus.merge(parent, children)
+            for parent, children in groups.items()]
 
 
 def cocompact(cells):
@@ -189,15 +191,12 @@ def cocompact(cells):
         Dict mapping H3 cell indices to signed integers (+1 or -1).
         Use co_uncompact to expand back to the original cells.
     """
-    cells = list(cells)
-    res = h3.get_resolution(cells[0])
+    janni = [Janus.included(c) for c in cells]
 
-    janni = {c: Janus.included(c) for c in cells}
-    while res > 0:
+    while h3.get_resolution(janni[0].root) > 0:
         janni = _bump(janni)
-        res -= 1
 
-    return dict(ArithDict.sum(j.pos for j in janni.values()))
+    return dict(ArithDict.sum(j.pos for j in janni))
 
 
 def co_uncompact(cells: dict[str, int], res: int) -> set[str]:
