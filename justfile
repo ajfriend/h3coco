@@ -1,6 +1,9 @@
 export UV_NO_EDITABLE := "1"
 export UV_OFFLINE := "0"  # toggle on when offline to avoid failures
 
+_:
+    just --list
+
 lab:
     uv run jupyter lab
 

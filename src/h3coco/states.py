@@ -1,39 +1,34 @@
 """Functions for working with H3 cells and US states."""
 
-import json
+from functools import cache
 from importlib.resources import files
 
+import geopandas as gpd
 import h3
 
 
-def _load_state_boundaries() -> dict:
-    """Load US state boundary data from bundled GeoJSON."""
-    data_file = files("h3coco.data").joinpath("us_states.json")
-    return json.loads(data_file.read_text())
+@cache
+def load_states() -> gpd.GeoDataFrame:
+    """Load US state boundaries as a GeoDataFrame."""
+    path = files('h3coco.data').joinpath('us_states.json')
+    return gpd.read_file(path)
 
 
-def _get_state_geometry(state: str) -> dict:
-    """Get the GeoJSON geometry for a US state."""
-    boundaries = _load_state_boundaries()
-    state_lower = state.lower()
-
-    for feature in boundaries['features']:
-        name = feature['properties']['NAME']
-        if name.lower() == state_lower:
-            return feature['geometry']
-
-    available = sorted(f['properties']['NAME'] for f in boundaries['features'])
-    raise ValueError(f'Unknown state: {state!r}. Available: {available}')
+def state_names() -> list[str]:
+    """Return sorted list of available US state names."""
+    return sorted(load_states()['NAME'].tolist())
 
 
-def _geo_to_cells_safe(geometry: dict, resolution: int) -> set[str]:
+def _geo_to_cells_safe(geometry, resolution: int) -> set[str]:
     """Convert geometry to cells, handling MultiPolygons and degenerate polygons."""
-    if geometry['type'] == 'Polygon':
-        return h3.geo_to_cells(geometry, resolution)
+    geo = geometry.__geo_interface__
 
-    if geometry['type'] == 'MultiPolygon':
+    if geo['type'] == 'Polygon':
+        return h3.geo_to_cells(geo, resolution)
+
+    if geo['type'] == 'MultiPolygon':
         cells = set()
-        for poly_coords in geometry['coordinates']:
+        for poly_coords in geo['coordinates']:
             single = {'type': 'Polygon', 'coordinates': poly_coords}
             try:
                 cells.update(h3.geo_to_cells(single, resolution))
@@ -42,18 +37,23 @@ def _geo_to_cells_safe(geometry: dict, resolution: int) -> set[str]:
                 pass
         return cells
 
-    raise ValueError(f'Unsupported geometry type: {geometry["type"]}')
+    raise ValueError(f'Unsupported geometry type: {geo["type"]}')
 
 
 def cells_for_state(state: str, resolution: int) -> set[str]:
     """Return the set of H3 cells at the given resolution covering a US state.
 
     Args:
-        state: US state name (e.g., "California", "Texas")
+        state: US state name (e.g., 'California', 'Texas')
         resolution: H3 resolution (0-15)
 
     Returns:
         Set of H3 cell indices covering the state.
     """
-    geometry = _get_state_geometry(state)
-    return _geo_to_cells_safe(geometry, resolution)
+    gdf = load_states()
+    matches = gdf[gdf['NAME'].str.lower() == state.lower()]
+
+    if matches.empty:
+        raise ValueError(f'Unknown state: {state!r}. Available: {state_names()}')
+
+    return _geo_to_cells_safe(matches.iloc[0].geometry, resolution)
