@@ -11,33 +11,15 @@ import h3
 def load_states() -> gpd.GeoDataFrame:
     """Load US state boundaries as a GeoDataFrame."""
     path = files('h3coco.data').joinpath('us_states.json')
-    return gpd.read_file(path)
+    gdf = gpd.read_file(path)
+    # buffer(0) cleans up degenerate polygons that cause h3 to fail
+    gdf['geometry'] = gdf['geometry'].buffer(0)
+    return gdf
 
 
 def state_names() -> list[str]:
     """Return sorted list of available US state names."""
     return sorted(load_states()['NAME'].tolist())
-
-
-def _geo_to_cells_safe(geometry, resolution: int) -> set[str]:
-    """Convert geometry to cells, handling MultiPolygons and degenerate polygons."""
-    geo = geometry.__geo_interface__
-
-    if geo['type'] == 'Polygon':
-        return h3.geo_to_cells(geo, resolution)
-
-    if geo['type'] == 'MultiPolygon':
-        cells = set()
-        for poly_coords in geo['coordinates']:
-            single = {'type': 'Polygon', 'coordinates': poly_coords}
-            try:
-                cells.update(h3.geo_to_cells(single, resolution))
-            except h3.H3FailedError:
-                # Skip degenerate polygons
-                pass
-        return cells
-
-    raise ValueError(f'Unsupported geometry type: {geo["type"]}')
 
 
 def cells_for_state(state: str, resolution: int) -> set[str]:
@@ -56,4 +38,5 @@ def cells_for_state(state: str, resolution: int) -> set[str]:
     if matches.empty:
         raise ValueError(f'Unknown state: {state!r}. Available: {state_names()}')
 
-    return _geo_to_cells_safe(matches.iloc[0].geometry, resolution)
+    geometry = matches.iloc[0].geometry
+    return h3.geo_to_cells(geometry.__geo_interface__, resolution)
