@@ -159,16 +159,6 @@ def _process_children(parent: str, children: list[_Janus]) -> _Janus:
     child_res = children[0].child_res
     local_target = set.union(*[c.local_target_cells for c in children])
 
-    # Compute cells in parent that are NOT in our target
-    parent_children = set(h3.cell_to_children(parent, child_res))
-    missing = parent_children - local_target
-
-    # If neg is empty but there are missing cells, add them
-    # (This happens at the first bump level where children have neg={})
-    if len(neg) == 0 and len(missing) > 0:
-        for m in missing:
-            neg[m] = 1
-
     # Decide: direct representation vs complement
     if len(neg) + 1 < len(pos):
         pos = ArithDict([parent]) - neg
@@ -189,6 +179,20 @@ def _bump(janni: dict[str, _Janus]) -> dict[str, _Janus]:
     for c, j in janni.items():
         p = h3.cell_to_parent(c)
         groups[p].append(j)
+
+    # Fill in missing children with Janus objects that exclude the entire cell
+    for parent, children in groups.items():
+        child_res = children[0].child_res
+        covered = {j.root for j in children}
+        all_children = set(h3.cell_to_children(parent))
+        for missing in all_children - covered:
+            children.append(_Janus(
+                root=missing,
+                child_res=child_res,
+                local_target_cells=set(),
+                pos=ArithDict(),
+                neg=ArithDict({missing: 1}),
+            ))
 
     return {h: _process_children(h, children) for h, children in groups.items()}
 

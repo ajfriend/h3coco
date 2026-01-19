@@ -8,5 +8,5 @@
 
 ## Testing
 
-- Run tests using `just test` (or `just test tests/path/to/test.py` for specific files)
+- Run tests using `just test`
 - Always use `uv run` to run Python commands, never system `python3`
