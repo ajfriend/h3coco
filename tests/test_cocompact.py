@@ -44,3 +44,22 @@ def test3():
     assert cells == expected
 
     assert coco.cocompact(cells) == a
+
+
+def test4():
+    cells0 = {
+        '824807fffffffff',
+        '82480ffffffffff',
+        '824817fffffffff',
+        '82481ffffffffff',
+        '824837fffffffff',
+        '8448201ffffffff',
+    }
+    cells0 = coco.ArithDict(cells0)
+    cells4 = coco.co_uncompact(cells0, 4)
+
+    expected = {'81483ffffffffff': 1, '824827fffffffff': -1, '8448201ffffffff': 1, '82482ffffffffff': -1}
+    assert coco.co_uncompact(expected, 4) == cells4
+
+    out = coco.cocompact(cells4)
+    assert out == expected

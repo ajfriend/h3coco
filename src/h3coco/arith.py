@@ -156,7 +156,20 @@ def _from_cells(cells):
 def _process_children(parent: str, children: list[_Janus]) -> _Janus:
     pos = ArithDict.sum(j.pos for j in children)
     neg = ArithDict.sum(j.neg for j in children)
+    child_res = children[0].child_res
+    local_target = set.union(*[c.local_target_cells for c in children])
 
+    # Compute cells in parent that are NOT in our target
+    parent_children = set(h3.cell_to_children(parent, child_res))
+    missing = parent_children - local_target
+
+    # If neg is empty but there are missing cells, add them
+    # (This happens at the first bump level where children have neg={})
+    if len(neg) == 0 and len(missing) > 0:
+        for m in missing:
+            neg[m] = 1
+
+    # Decide: direct representation vs complement
     if len(neg) + 1 < len(pos):
         pos = ArithDict([parent]) - neg
     else:
@@ -164,8 +177,8 @@ def _process_children(parent: str, children: list[_Janus]) -> _Janus:
 
     return _Janus(
         root=parent,
-        child_res=children[0].child_res,
-        local_target_cells=set.union(*[c.local_target_cells for c in children]),
+        child_res=child_res,
+        local_target_cells=local_target,
         pos=pos,
         neg=neg,
     )
