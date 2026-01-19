@@ -48,14 +48,14 @@ def test3():
 
 def test4():
     cells0 = {
-        '824807fffffffff',
-        '82480ffffffffff',
-        '824817fffffffff',
-        '82481ffffffffff',
-        '824837fffffffff',
-        '8448201ffffffff',
+        '824807fffffffff': 1,
+        '82480ffffffffff': 1,
+        '824817fffffffff': 1,
+        '82481ffffffffff': 1,
+        '824837fffffffff': 1,
+        '8448201ffffffff': 1,
     }
-    cells0 = coco.ArithDict(cells0)
+
     cells4 = coco.co_uncompact(cells0, 4)
 
     expected = {'81483ffffffffff': 1, '824827fffffffff': -1, '8448201ffffffff': 1, '82482ffffffffff': -1}
