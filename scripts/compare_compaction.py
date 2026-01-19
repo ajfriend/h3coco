@@ -1,7 +1,5 @@
-#!/usr/bin/env python3
 """Compare h3.compact_cells vs coco.compact across US states."""
 
-import argparse
 import json
 from importlib.resources import files
 
@@ -69,28 +67,18 @@ def generate_markdown_table(df: pd.DataFrame) -> str:
     return table
 
 
-def main():
-    parser = argparse.ArgumentParser(description='Compare H3 compaction methods')
-    parser.add_argument('--res', type=int, default=6, help='H3 resolution (default: 6)')
-    args = parser.parse_args()
+RES = 6
 
-    states = get_state_names()
-    results = []
+states = get_state_names()
+results = []
 
-    for state in states:
-        print(f'Processing {state}...', flush=True)
-        try:
-            result = compare_state(state, args.res)
-            results.append(result)
-        except Exception as e:
-            print(f'  Error: {e}')
+for state in states:
+    print(f'Processing {state}...', flush=True)
+    result = compare_state(state, RES)
+    results.append(result)
 
-    df = pd.DataFrame(results)
-    df = df.sort_values('reduction', ascending=False)
+df = pd.DataFrame(results)
+df = df.sort_values('reduction', ascending=False)
 
-    print()
-    print(generate_markdown_table(df))
-
-
-if __name__ == '__main__':
-    main()
+print()
+print(generate_markdown_table(df))
