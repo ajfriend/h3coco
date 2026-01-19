@@ -11,6 +11,9 @@ reinstall:
 test: reinstall
     uv run pytest
 
+table:
+    uv run scripts/compare_compaction.py
+
 purge:
     just _rm .venv
     just _rm '*.pytest_cache'

@@ -1,7 +1,4 @@
-#!/usr/bin/env python3
 """Compare h3.compact_cells vs coco.compact across US states."""
-
-import argparse
 
 import h3
 from tabulate import tabulate
@@ -73,28 +70,23 @@ def generate_markdown_table(results: list[dict], res: int) -> str:
     return f'## Compaction comparison at resolution {res}\n\n{table}'
 
 
-def main():
-    parser = argparse.ArgumentParser(description='Compare H3 compaction methods')
-    parser.add_argument('--res', type=int, default=6, help='H3 resolution (default: 6)')
-    args = parser.parse_args()
 
-    states = get_state_names()
-    results = []
+RES = 6
 
-    for state in states:
-        print(f'Processing {state}...', flush=True)
-        try:
-            result = compare_state(state, args.res)
-            results.append(result)
-        except Exception as e:
-            print(f'  Error: {e}')
+states = get_state_names()
+results = []
 
-    # Sort by ratio descending
-    results.sort(key=lambda r: r['ratio'], reverse=True)
+for state in states:
+    print(f'Processing {state}...', flush=True)
+    try:
+        result = compare_state(state, RES)
+        results.append(result)
+    except Exception as e:
+        print(f'  Error: {e}')
 
-    print()
-    print(generate_markdown_table(results, args.res))
+# Sort by ratio descending
+results.sort(key=lambda r: r['ratio'], reverse=True)
 
+print()
+print(generate_markdown_table(results, RES))
 
-if __name__ == '__main__':
-    main()
