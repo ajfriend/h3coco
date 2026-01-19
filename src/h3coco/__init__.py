@@ -1,6 +1,7 @@
 """h3coco - H3 geospatial indexing utilities."""
 
-from h3coco.arith import ArithDict, H3Cell, compact, uncompact
+from h3coco.arithdict import ArithDict
+from h3coco.compact import H3Cell, compact, uncompact
 from h3coco.plotting import plot_cells, plot_state
 from h3coco.states import cells_for_state, load_states, state_names
 
