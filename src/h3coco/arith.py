@@ -104,6 +104,14 @@ class ArithDict:
 
     __rmul__ = __mul__
 
+    @classmethod
+    def sum(cls, iterable):
+        """Sum an iterable of items, applying ArithDict constructor to each."""
+        result = cls()
+        for item in iterable:
+            result += cls(item)
+        return result
+
     def __repr__(self):
         return f'ArithDict({self._d})'
 
