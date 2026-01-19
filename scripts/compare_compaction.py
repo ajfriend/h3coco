@@ -1,6 +1,12 @@
+#!/usr/bin/env python3
 """Compare h3.compact_cells vs coco.compact across US states."""
 
+import argparse
+import json
+from importlib.resources import files
+
 import h3
+import pandas as pd
 from tabulate import tabulate
 
 import h3coco as coco
@@ -8,9 +14,6 @@ import h3coco as coco
 
 def get_state_names():
     """Get list of US state names from the GeoJSON data."""
-    import json
-    from importlib.resources import files
-
     data = files('h3coco.data').joinpath('us_states.json').read_text()
     geojson = json.loads(data)
     return sorted(f['properties']['NAME'] for f in geojson['features'])
@@ -38,55 +41,56 @@ def compare_state(state: str, res: int) -> dict:
     coco_uncompacted = coco.uncompact(coco_compacted, res)
     assert coco_uncompacted == cells, f'coco round-trip failed for {state}'
 
-    # Compute improvement ratio
-    ratio = h3_count / coco_count if coco_count > 0 else 0
+    # Compute % reduction from h3 to coco
+    reduction = (h3_count - coco_count) / h3_count * 100 if h3_count > 0 else 0
 
     return {
+        'resolution': res,
         'state': state,
         'original': original_count,
-        'h3': h3_count,
-        'coco': coco_count,
-        'ratio': ratio,
+        'h3_compact': h3_count,
+        'coco_compact': coco_count,
+        'reduction': reduction,
     }
 
 
-def generate_markdown_table(results: list[dict], res: int) -> str:
-    """Generate a markdown table from results."""
-    # Build table data
-    headers = ['State', 'Original', 'h3.compact', 'coco.compact', 'Ratio']
-    rows = [
-        [r['state'], f"{r['original']:,}", f"{r['h3']:,}", f"{r['coco']:,}", f"{r['ratio']:.2f}x"]
-        for r in results
-    ]
-
-    # Add totals
-    total_original = sum(r['original'] for r in results)
-    total_h3 = sum(r['h3'] for r in results)
-    total_coco = sum(r['coco'] for r in results)
-    total_ratio = total_h3 / total_coco if total_coco > 0 else 0
-    rows.append(['**Total**', f'**{total_original:,}**', f'**{total_h3:,}**', f'**{total_coco:,}**', f'**{total_ratio:.2f}x**'])
-
-    table = tabulate(rows, headers=headers, tablefmt='github', colalign=('left', 'right', 'right', 'right', 'right'))
-    return f'## Compaction comparison at resolution {res}\n\n{table}'
+def generate_markdown_table(df: pd.DataFrame) -> str:
+    """Generate a markdown table from DataFrame."""
+    df = df.copy()
+    df['reduction'] = df['reduction'].apply(lambda x: f'-{x:.1f}%' if x > 0 else '0%')
+    table = tabulate(
+        df[['state', 'resolution', 'original', 'h3_compact', 'coco_compact', 'reduction']],
+        headers=['State', 'Res', '# Cells', 'h3.compact', 'coco.compact', 'Reduction'],
+        tablefmt='github',
+        showindex=False,
+        intfmt=',',
+        colalign=('left', 'right', 'right', 'right', 'right', 'right'),
+    )
+    return table
 
 
+def main():
+    parser = argparse.ArgumentParser(description='Compare H3 compaction methods')
+    parser.add_argument('--res', type=int, default=6, help='H3 resolution (default: 6)')
+    args = parser.parse_args()
 
-RES = 6
+    states = get_state_names()
+    results = []
 
-states = get_state_names()
-results = []
+    for state in states:
+        print(f'Processing {state}...', flush=True)
+        try:
+            result = compare_state(state, args.res)
+            results.append(result)
+        except Exception as e:
+            print(f'  Error: {e}')
 
-for state in states:
-    print(f'Processing {state}...', flush=True)
-    try:
-        result = compare_state(state, RES)
-        results.append(result)
-    except Exception as e:
-        print(f'  Error: {e}')
+    df = pd.DataFrame(results)
+    df = df.sort_values('reduction', ascending=False)
 
-# Sort by ratio descending
-results.sort(key=lambda r: r['ratio'], reverse=True)
+    print()
+    print(generate_markdown_table(df))
 
-print()
-print(generate_markdown_table(results, RES))
 
+if __name__ == '__main__':
+    main()
