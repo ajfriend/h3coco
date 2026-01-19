@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Compare h3.compact_cells vs coco.compact across US states."""
 
 import h3
@@ -53,10 +52,14 @@ def generate_markdown_table(df: pd.DataFrame) -> str:
 
 
 RES = 6
+SKIP = {
+    # 'Alaska',
+}
 
 results = [
     compare_state(state, RES)
     for state in coco.state_names()
+    if state not in SKIP
 ]
 
 df = pd.DataFrame(results)

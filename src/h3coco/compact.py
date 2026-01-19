@@ -72,6 +72,9 @@ def compact(cells: Iterable[H3Cell]) -> dict[H3Cell, int]:
     """
     jani = [Janus.included(c) for c in cells]
 
+    if not jani:
+        return {}
+
     while h3.get_resolution(jani[0].root) > 0:
         jani = _bump(jani)
 
