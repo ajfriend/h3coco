@@ -1,6 +1,11 @@
 """Arithmetic dictionary and compact/uncompact operations for H3 cells."""
 
+from collections.abc import Iterable
+
 import h3
+
+# Type alias for H3 cell indices (hexadecimal strings like '8049fffffffffff')
+H3Cell = str
 
 
 class ArithDict:
@@ -181,15 +186,16 @@ def _bump(janni):
             for parent, children in groups.items()]
 
 
-def compact(cells):
+def compact(cells: Iterable[H3Cell]) -> dict[H3Cell, int]:
     """Compact a set of H3 cells into a signed cell representation.
 
     Args:
         cells: Iterable of H3 cell indices (all at same resolution).
+               H3Cell is a string like '8049fffffffffff'.
 
     Returns:
         Dict mapping H3 cell indices to signed integers (+1 or -1).
-        Use co_uncompact to expand back to the original cells.
+        Use uncompact to expand back to the original cells.
     """
     janni = [Janus.included(c) for c in cells]
 
@@ -199,12 +205,13 @@ def compact(cells):
     return dict(ArithDict.sum(j.pos for j in janni))
 
 
-def uncompact(cells, res):
+def uncompact(cells: dict[H3Cell, int], res: int) -> set[H3Cell]:
     """Uncompact a signed cell representation to a set of cells at target resolution.
 
     Args:
         cells: Dict mapping H3 cell indices to signed integers (+1 or -1).
                Positive cells are included, negative cells are subtracted.
+               H3Cell is a string like '8049fffffffffff'.
         res: Target H3 resolution for output cells.
 
     Returns:
