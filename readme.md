@@ -38,7 +38,7 @@ If, instead, we store "+1 for the parent" and "-1 for the missing child",
 then we only need 2 cells to represent the original set of 6. (Just note
 that we do need to keep track of which are positive and which are negative.)
 
-You can extend this idea up the entire H3 cell hierarcy. Here's an example
+You can extend this idea up the entire H3 cell hierarchy. Here's an example
 where we have one cell which appears in the uncompacted final result
 after being added twice and removed once:
 
