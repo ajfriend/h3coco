@@ -29,11 +29,21 @@ Here's California:
 ![California co-compaction example](california_6.svg)
 
 
-## Why?
+## How?
 
-Standard `h3.compact_cells` only merges cells when all 7 children are present. This leaves gaps at boundaries.
+Standard `h3.compact_cells` merges cells when all 7 children are present (for hexes).
+That means, if we have 6 out of 7 children present, the compacted representation
+takes up 6 cells.
+If, instead, we store "+1 for the parent" and "-1 for the missing child",
+then we only need 2 cells to represent the original set of 6. (Just note
+that we do need to keep track of which are positive and which are negative.)
 
-`coco.compact` uses a signed representation: positive cells are included, negative cells are subtracted. This allows representing "parent minus some children" which often yields 25-45% fewer cells.
+You can extend this idea up the entire H3 cell hierarcy. Here's an example
+where we have one cell which appears in the uncompacted final result
+after being added twice and removed once:
+
+![Triple cell example](triple.svg)
+
 
 ## Installation
 
@@ -72,7 +82,12 @@ original = coco.uncompact(compacted, res=6)
 assert original == set(cells)
 ```
 
-TODO: "Or, if you have a set of cells and would like to make the comparison plot like we have for california, just run..."
+To generate a comparison plot like the one above:
+
+```python
+cells = coco.cells_for_state('california', res=6)
+coco.plot_compaction_comparison(cells, savefig='california.svg')
+```
 
 ## Data format
 

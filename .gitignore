@@ -12,3 +12,4 @@ wheels/
 .claude
 uv.lock
 .pytest_cache
+.DS_Store
