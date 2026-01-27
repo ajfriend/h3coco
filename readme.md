@@ -1,8 +1,10 @@
 # h3coco
 
-Dual compaction (or co-compaction) for H3 cells.
+"Dual" compaction (or co-compaction) for H3 cells.
 
-Idea: If your uncompaction operation can both add and remove cells, then you can
+## Idea
+
+If your uncompaction operation can both add and remove cells, then you can
 store a "co-compacted" set of H3 cells more tersely than if
 you can just add cells (standard H3 uncompaction).
 
