@@ -207,6 +207,7 @@ def plot_cocompact(
     outline=False,
     outline_color='black',
     outline_linewidth=2,
+    _outline_geo=None,
 ):
     """Plot a co-compacted H3 cell set.
 
@@ -227,6 +228,7 @@ def plot_cocompact(
         outline: If True, plot the outline of the uncompacted cells.
         outline_color: Color for the outline (default: black).
         outline_linewidth: Line width for the outline (default: 2).
+        _outline_geo: Pre-computed outline GeoJSON (internal use for efficiency).
 
     Returns:
         The matplotlib axes.
@@ -271,10 +273,13 @@ def plot_cocompact(
 
     # Plot outline of the full uncompacted region
     if outline:
-        from h3coco.compact import uncompact
-        uncompacted = uncompact(original_cells, res)
-        shape = h3.cells_to_h3shape(uncompacted)
-        geo = shape.__geo_interface__
+        if _outline_geo is None:
+            from h3coco.compact import uncompact
+            uncompacted = uncompact(original_cells, res)
+            shape = h3.cells_to_h3shape(uncompacted)
+            geo = shape.__geo_interface__
+        else:
+            geo = _outline_geo
 
         if geo['type'] == 'Polygon':
             _plot_polygon_coords(ax, geo['coordinates'], 'none', 1.0, outline_color, outline_linewidth)
@@ -414,31 +419,35 @@ def plot_compaction_comparison(cells, width=12, fontsize=12, savefig=None):
     # Find best corner for text
     corner = best_text_corner(compacted)
 
+    # Pre-compute outline (same for all plots since they represent the same region)
+    outline_shape = h3.cells_to_h3shape(cells)
+    outline_geo = outline_shape.__geo_interface__
+
     # Standard compaction
     ax = axs[0]
     h3_compacted_dict = {cell: 1 for cell in sorted(h3_compacted)}
-    plot_cocompact(h3_compacted_dict, res=res, ax=ax, outline=True, outline_linewidth=0.5, include_color='forestgreen')
+    plot_cocompact(h3_compacted_dict, res=res, ax=ax, outline=True, outline_linewidth=0.5, include_color='forestgreen', _outline_geo=outline_geo)
     ax.set_xticks([])
     ax.set_yticks([])
     ax.text(corner['x'], corner['y'], f'standard compaction\n{n_h3} cells\nresolution {res}', transform=ax.transAxes, ha=corner['ha'], va=corner['va'], fontsize=fontsize)
 
     # Co-compacted
     ax = axs[1]
-    plot_cocompact(compacted, res=res, show='both', ax=ax, outline=True, outline_linewidth=0.5)
+    plot_cocompact(compacted, res=res, show='both', ax=ax, outline=True, outline_linewidth=0.5, _outline_geo=outline_geo)
     ax.set_xticks([])
     ax.set_yticks([])
     ax.text(corner['x'], corner['y'], f'co-compaction\n{n_total} cells\n({reduction_pct:.1f}% reduction)', transform=ax.transAxes, ha=corner['ha'], va=corner['va'], fontsize=fontsize)
 
     # Positive elements
     ax = axs[2]
-    plot_cocompact(compacted, res=res, show='include', ax=ax, outline=True, outline_linewidth=0.5)
+    plot_cocompact(compacted, res=res, show='include', ax=ax, outline=True, outline_linewidth=0.5, _outline_geo=outline_geo)
     ax.set_xticks([])
     ax.set_yticks([])
     ax.text(corner['x'], corner['y'], f'{n_pos} positive cells', transform=ax.transAxes, ha=corner['ha'], va=corner['va'], fontsize=fontsize)
 
     # Negative elements
     ax = axs[3]
-    plot_cocompact(compacted, res=res, show='exclude', ax=ax, outline=True, outline_linewidth=0.5)
+    plot_cocompact(compacted, res=res, show='exclude', ax=ax, outline=True, outline_linewidth=0.5, _outline_geo=outline_geo)
     ax.set_xticks([])
     ax.set_yticks([])
     ax.text(corner['x'], corner['y'], f'{n_neg} negative cells', transform=ax.transAxes, ha=corner['ha'], va=corner['va'], fontsize=fontsize)

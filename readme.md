@@ -1,6 +1,31 @@
 # h3coco
 
-Co-compaction for H3 cells using signed cell representation.
+Dual compaction (or co-compaction) for H3 cells.
+
+Idea: If your uncompaction operation can both add and remove cells, then you can
+store a "co-compacted" set of H3 cells more tersly than if
+you can just add cells (standard H3 uncompaction).
+
+This repo provides proof-of-concept implementations for `h3coco.compact`
+and `h3coco.uncompact`.
+
+A co-compacted set is a collection of cells
+marked for addition or subtraction, which we represent here with a `dict[str, int]`
+like:
+
+```python
+{'8049fffffffffff': 1, '8048fffffffffff': -1, ...}
+```
+
+(You could alternatively store positive and negative cell sets.)
+
+We're seeing around 25% to 45% reduction in number of cells needed, compared
+to standard H3 compaction.
+
+Here's California:
+
+![California co-compaction example](california_6.svg)
+
 
 ## Why?
 
