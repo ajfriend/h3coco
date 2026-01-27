@@ -98,6 +98,11 @@ coco.plot_compaction_comparison(cells, savefig='california.svg')
 
 ## Comparison with h3.compact
 
+TODO: correct this
+For each state in the US, we use `h3.somethign` to get a set of H3 cells (taking finer
+resolutions for smaller states), we then compare the size of the compacted
+sets between `h3.compact_cells` and `h3coco.compact`.
+
 | State                |   Res |   # Cells |   h3.compact |   coco.compact |   Reduction |
 |----------------------|-------|-----------|--------------|----------------|-------------|
 | Georgia              |     7 |    31,596 |        1,344 |            770 |      -42.7% |
