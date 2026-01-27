@@ -19,7 +19,7 @@ like:
 {'8049fffffffffff': 1, '8048fffffffffff': -1, ...}
 ```
 
-(You could alternatively store positive and negative cell sets.)
+(Alternatively, you might just store a "positive" array of cells and a "negative" array of cells.)
 
 We're seeing around 25% to 45% reduction in number of cells needed, compared
 to standard H3 compaction.
