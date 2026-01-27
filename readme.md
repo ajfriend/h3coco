@@ -35,13 +35,33 @@ Standard `h3.compact_cells` only merges cells when all 7 children are present. T
 
 `coco.compact` uses a signed representation: positive cells are included, negative cells are subtracted. This allows representing "parent minus some children" which often yields 25-45% fewer cells.
 
+## Installation
+
+```bash
+pip install git+https://github.com/ajfriend/h3coco.git
+```
+
+Or add to `requirements.txt`:
+
+```
+git+https://github.com/ajfriend/h3coco.git
+```
+
+Or add to `pyproject.toml`:
+
+```toml
+dependencies = [
+    "h3coco @ git+https://github.com/ajfriend/h3coco.git",
+]
+```
+
 ## Usage
 
 ```python
 import h3coco as coco
 
 # Get cells for a region
-cells = coco.cells_for_state('California', res=6)
+cells = coco.cells_for_state('california', res=6)
 
 # Compact to signed representation
 compacted = coco.compact(cells)
@@ -51,6 +71,8 @@ compacted = coco.compact(cells)
 original = coco.uncompact(compacted, res=6)
 assert original == set(cells)
 ```
+
+TODO: "Or, if you have a set of cells and would like to make the comparison plot like we have for california, just run..."
 
 ## Data format
 
