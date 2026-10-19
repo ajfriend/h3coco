@@ -40,13 +40,14 @@ class Janus:
         pos = ArithDict.sum(j.pos for j in children)
         neg = ArithDict.sum(j.neg for j in children)
 
-        # Choose whichever representation is more compact
-        if len(neg) + 1 < len(pos):
-            pos = ArithDict.one(parent) - neg
-        else:
-            neg = ArithDict.one(parent) - pos
+        # Choose whichever representation is more compact, for pos and neg
+        # independently: each side either keeps the children's sum or flips
+        # to "parent minus the other side"
+        one = ArithDict.one(parent)
+        new_pos = one - neg if len(neg) + 1 < len(pos) else pos
+        new_neg = one - pos if len(pos) + 1 < len(neg) else neg
 
-        return cls(parent, pos, neg)
+        return cls(parent, new_pos, new_neg)
 
 
 def _bump(jani):

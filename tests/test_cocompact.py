@@ -63,3 +63,19 @@ def test4():
 
     out = coco.compact(cells4)
     assert out == expected
+
+
+def test_merge_chooses_pos_and_neg_independently():
+    # 6 complete children of a res-1 cell, plus 4 of the 7 grandchildren
+    # under the remaining child. Coupling the pos/neg choice in
+    # Janus.merge used to give 6 entries; the minimum is 4.
+    parent = h3.cell_to_parent(h3.latlng_to_cell(40.69, -73.98, 1), 1)
+    kids = sorted(h3.cell_to_children(parent))
+    cells = {c for k in kids[:6] for c in h3.cell_to_children(k)}
+    cells |= set(sorted(h3.cell_to_children(kids[6]))[:4])
+    assert len(cells) == 46
+
+    result = coco.compact(cells)
+
+    assert len(result) == 4
+    assert coco.uncompact(result, 3) == cells
